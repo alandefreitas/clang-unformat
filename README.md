@@ -16,6 +16,8 @@ cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-O3 ..
 cmake --build . --target clang-unformat
 ```
 
+Make sure to compile with `-DCMAKE_CXX_FLAGS=-O3`. This makes a huge difference.
+
 Run:
 
 ```shell
