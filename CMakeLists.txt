@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 project(clang_unformat)
 
-set(CMAKE_CXX_STANDARD 17)
-
 find_package(Threads)
 find_package(Boost 1.78.0 COMPONENTS process program_options filesystem)
 include(FetchContent)
@@ -18,7 +16,7 @@ if(NOT futures_POPULATED)
 endif()
 
 add_executable(clang-unformat standalone/main.cpp)
-
+target_compile_features(clang-unformat PUBLIC cxx_std_17)
 target_link_libraries(clang-unformat
     Boost::program_options
     Boost::filesystem
