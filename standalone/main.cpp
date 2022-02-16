@@ -80,6 +80,7 @@ struct cli_config {
     fs::path output;
     fs::path temp;
     fs::path clang_format;
+    std::size_t clang_format_version;
     std::vector<std::string> extensions;
     std::size_t parallel{futures::hardware_concurrency()};
     bool require_influence{false};
@@ -232,9 +233,13 @@ inline bool validate_input(cli_config &config) {
                         std::size_t major = 0;
                         auto res = std::from_chars(clang_version_view.data(),
                                                    clang_version_view.data() + clang_version_view.size(), major, 10);
-                        if (res.ec == std::errc{} && major < 13) {
-                            fmt::print(fmt::fg(fmt::terminal_color::red),
-                                       "You need to update clang-format from {} for this to work properly\n", major);
+                        if (res.ec == std::errc{}) {
+                            config.clang_format_version = major;
+                            if (major < 13) {
+                                fmt::print(fmt::fg(fmt::terminal_color::red),
+                                           "You might want to update clang-format from {} for this to work properly\n",
+                                           major);
+                            }
                         }
                     }
                 }
@@ -713,10 +718,12 @@ inline bool format_temp_directory(const cli_config &config, const fs::path &task
         fs::path p = it->path();
         if (should_format(config, p)) {
             process::ipstream is;
-            process::child c(config.clang_format.c_str(), "-i", fs::absolute(p).c_str(), process::std_out > is);
+            process::ipstream err_is;
+            process::child c(config.clang_format.c_str(), "-i", fs::absolute(p).c_str(), process::std_out > is,
+                             process::std_err > process::null);
             std::string line;
             bool first_error_line = true;
-            while (c.running() && std::getline(is, line) && !line.empty()) {
+            while (c.running() && (std::getline(is, line) || std::getline(err_is, line)) && !line.empty()) {
                 if (first_error_line) {
                     fmt::print(fmt::fg(fmt::terminal_color::red), "clang-format error!\n");
                     first_error_line = false;
@@ -813,7 +820,8 @@ void clang_format_local_search(const cli_config &config) {
         }
 
         fmt::print("Adjust ");
-        fmt::print(fmt::fg(fmt::terminal_color::green), "{}\n", key);
+        fmt::print(fmt::fg(fmt::terminal_color::green), "{}", key);
+        fmt::print(": {}\n", possible_values.options);
         auto closest_edit_distance = std::size_t(-1);
         bool value_influenced_output = false;
         std::string improvement_value;
@@ -828,6 +836,8 @@ void clang_format_local_search(const cli_config &config) {
                     fs::path task_temp = config.temp / fmt::format("temp_{}", i);
                     fs::copy(config.input, task_temp,
                              fs::copy_options::recursive | fs::copy_options::overwrite_existing);
+
+                    // Emplace option in clang format
                     current_cf.emplace_back(clang_format_entry{key, possible_value, true, 0});
                     save(current_cf, task_temp / ".clang-format");
 
@@ -848,7 +858,8 @@ void clang_format_local_search(const cli_config &config) {
 
                 // Print some info
                 if (std::size_t dist = evaluation_tasks[i].get(); dist == std::size_t(-1)) {
-                    fmt::print(fmt::fg(fmt::terminal_color::yellow), " (failed option)\n");
+                    fmt::print(fmt::fg(fmt::terminal_color::yellow),
+                               " (skipping option unavailable in clang-format {})\n", config.clang_format_version);
                 } else {
                     const bool improved = dist < closest_edit_distance;
                     const bool closest_is_concrete_value = closest_edit_distance != std::size_t(-1);
@@ -857,6 +868,9 @@ void clang_format_local_search(const cli_config &config) {
                     }
                     if (improved && closest_is_concrete_value) {
                         fmt::print(fmt::fg(fmt::terminal_color::green), " (improved edit distance to {})\n", dist);
+                    }
+                    if (improved && closest_is_concrete_value) {
+                        fmt::print(fmt::fg(fmt::terminal_color::blue), " (initial edit distance is {})\n", dist);
                     } else {
                         fmt::print(" (edit distance {})\n", dist);
                     }
@@ -952,8 +966,9 @@ void clang_format_local_search(const cli_config &config) {
                         entry.affected_output = true;
                         entry.failed = false;
                         entry.comment = fmt::format("inherited from prefix {}", opts.default_value_from_prefix);
-                        fmt::print(fmt::fg(fmt::terminal_color::green), "    Inheriting value {} from prefix {} for {}\n",
-                                   value, opts.default_value_from_prefix, entry.key);
+                        fmt::print(fmt::fg(fmt::terminal_color::green),
+                                   "    Inheriting value {} from prefix {} for {}\n", value,
+                                   opts.default_value_from_prefix, entry.key);
                         break;
                     }
                 }
@@ -976,8 +991,8 @@ void clang_format_local_search(const cli_config &config) {
                 entry.affected_output = true;
                 entry.failed = false;
                 entry.comment = fmt::format("Using default value {}", opts.default_value);
-                fmt::print(fmt::fg(fmt::terminal_color::green), "    Using default value {} for {}\n", opts.default_value,
-                           entry.key);
+                fmt::print(fmt::fg(fmt::terminal_color::green), "    Using default value {} for {}\n",
+                           opts.default_value, entry.key);
             }
         }
     }
