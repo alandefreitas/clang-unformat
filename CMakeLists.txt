@@ -3,6 +3,7 @@ project(clang_unformat)
 
 set(CMAKE_CXX_STANDARD 17)
 
+find_package(Threads)
 find_package(Boost 1.78.0 COMPONENTS process program_options filesystem)
 include(FetchContent)
 find_package(fmt QUIET)
@@ -17,6 +18,11 @@ if(NOT futures_POPULATED)
 endif()
 
 add_executable(clang-unformat standalone/main.cpp)
-target_include_directories(clang-unformat PRIVATE ${Boost_INCLUDE_DIR} source)
-target_link_libraries(clang-unformat boost_program_options ${Boost_LIBRARIES} fmt::fmt)
+
+target_link_libraries(clang-unformat
+    Boost::program_options
+    Boost::filesystem
+    Threads::Threads
+    fmt::fmt
+)
 target_include_directories(clang-unformat PRIVATE ${futures_SOURCE_DIR}/source)
