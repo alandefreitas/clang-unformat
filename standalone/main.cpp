@@ -466,6 +466,8 @@ inline std::vector<std::pair<std::string, clang_format_possible_values>> generat
         {"MaxEmptyLinesToKeep", {"0", "2", "4", "8", "16"}},
         // The indentation used for namespaces.
         {"NamespaceIndentation", {"NI_None", "NI_Inner", "NI_All"}},
+        // The pack constructor initializers style to use.
+        {"PackConstructorInitializers", {"PCIS_Never", "PCIS_BinPack", "PCIS_CurrentLine", "PCIS_NextLine"}},
         // The penalty for breaking around an assignment operator.
         {"PenaltyBreakAssignment", {"2", "4", "8", "16", "32", "64", "128", "256", "512", "1024", "2048"}},
         // The penalty for breaking a function call after call
@@ -475,6 +477,8 @@ inline std::vector<std::pair<std::string, clang_format_possible_values>> generat
         {"PenaltyBreakComment", {"2", "4", "8", "16", "32", "64", "128", "256", "512", "1024", "2048"}},
         // The penalty for breaking before the first <<.
         {"PenaltyBreakFirstLessLess", {"2", "4", "8", "16", "32", "64", "128", "256", "512", "1024", "2048"}},
+        // The penalty for breaking after (.
+        {"PenaltyBreakOpenParenthesis", {"2", "4", "8", "16", "32", "64", "128", "256", "512", "1024", "2048"}},
         // The penalty for each line break introduced inside a string literal.
         {"PenaltyBreakString", {"2", "4", "8", "16", "32", "64", "128", "256", "512", "1024", "2048"}},
         // The penalty for breaking after template declaration.
@@ -487,10 +491,18 @@ inline std::vector<std::pair<std::string, clang_format_possible_values>> generat
         {"PenaltyReturnTypeOnItsOwnLine", {"2", "4", "8", "16", "32", "64", "128", "256", "512", "1024", "2048"}},
         // Pointer and reference alignment style.
         {"PointerAlignment", {"PAS_Left", "PAS_Right", "PAS_Middle"}},
+        // Different ways to arrange specifiers and qualifiers (e.g. const/volatile)
+        {"QualifierAlignment", {"QAS_Leave", "QAS_Left", "QAS_Right", "QAS_Custom"}},
         // Reference alignment style (overrides PointerAlignment for references).
         {"ReferenceAlignment", {"RAS_Pointer", "RAS_Left", "RAS_Right", "RAS_Middle"}},
+        // Remove optional braces of control statements
+        {"RemoveBracesLLVM", {"true", "false"}},
         // If true, clang-format will attempt to re-flow comments.
         {"ReflowComments", {"true", "false"}},
+        // The position of the requires clause.
+        {"RequiresClausePosition", {"RCPS_OwnLine", "RCPS_WithPreceding", "RCPS_WithFollowing", "RCPS_SingleLine"}},
+        // Specifies the use of empty lines to separate definition blocks
+        {"SeparateDefinitionBlocks", {"SDS_Leave", "SDS_Always", "SDS_Never"}},
         // The maximal number of unwrapped lines that a short namespace spans.
         {"ShortNamespaceLines", {"0", "1", "4", "8"}},
         // Controls if and how clang-format will sort #includes.
@@ -519,7 +531,27 @@ inline std::vector<std::pair<std::string, clang_format_possible_values>> generat
         // Defines in which cases to put a space before opening parentheses.
         {"SpaceBeforeParens",
          {"SBPO_Never", "SBPO_ControlStatements", "SBPO_ControlStatementsExceptControlMacros",
-          "SBPO_NonEmptyParentheses", "SBPO_Always"}},
+          "SBPO_NonEmptyParentheses", "SBPO_Always", "SBPO_Custom"}},
+        // Put space betwee control statement keywords
+        {"SpaceBeforeParensOptions.AfterControlStatements", {"true", "false"}},
+        // space between foreach macros and opening parentheses
+        {"SpaceBeforeParensOptions.AfterForeachMacros", {"true", "false"}},
+        // space between function declaration name and opening parentheses
+        {"SpaceBeforeParensOptions.AfterFunctionDeclarationName", {"true", "false"}},
+        // space between function declaration name and opening parentheses
+        {"SpaceBeforeParensOptions.AfterFunctionDeclarationName", {"true", "false"}},
+        // between function definition name and opening parentheses
+        {"SpaceBeforeParensOptions.AfterFunctionDefinitionName", {"true", "false"}},
+        // space between if macros and opening parentheses
+        {"SpaceBeforeParensOptions.AfterIfMacros", {"true", "false"}},
+        // space between operator overloading and opening parentheses
+        {"SpaceBeforeParensOptions.AfterOverloadedOperator", {"true", "false"}},
+        // put space between requires keyword in a requires clause and opening parentheses
+        {"SpaceBeforeParensOptions.AfterRequiresInClause", {"true", "false"}},
+        // space between requires keyword in a requires expression and opening parentheses
+        {"SpaceBeforeParensOptions.AfterRequiresInExpression", {"true", "false"}},
+        // space before opening parentheses only if the parentheses are not empty
+        {"SpaceBeforeParensOptions.BeforeNonEmptyParentheses", {"true", "false"}},
         // If false, spaces will be removed before range-based for loop colon.
         {"SpaceBeforeRangeBasedForLoopColon", {"true", "false"}},
         // If true, spaces will be before [. Lambdas will not be affected. Only the first [ will get a space added.
@@ -556,6 +588,12 @@ inline std::vector<std::pair<std::string, clang_format_possible_values>> generat
     for (auto &[key, value] : result) {
         if (starts_with(key, "BraceWrapping.")) {
             value.requirements = {"BreakBeforeBraces", "BS_Custom"};
+        }
+    }
+
+    for (auto &[key, value] : result) {
+        if (starts_with(key, "SpaceBeforeParensOptions.")) {
+            value.requirements = {"SpaceBeforeParens", "SBPO_Custom"};
         }
     }
 
