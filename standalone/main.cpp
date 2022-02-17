@@ -868,16 +868,33 @@ void clang_format_local_search(const cli_config &config) {
             fmt::print("==============================\n\n");
         }
 
-        fmt::print("Adjust ");
-        fmt::print(fmt::fg(fmt::terminal_color::green), "{}", key);
-        fmt::print(": {}\n", possible_values.options);
+        fmt::print("Parameter ");
+        fmt::print(fmt::fg(fmt::terminal_color::green), "{}\n", key);
+
+        // Options table header
         auto closest_edit_distance = std::size_t(-1);
         bool value_influenced_output = false;
         std::string improvement_value;
         auto evaluation_start = std::chrono::steady_clock::now();
         if (possible_values.options.size() > 1) {
-            std::vector<futures::cfuture<std::size_t>> evaluation_tasks;
+            // Table header
+            constexpr std::size_t first_col_w = std::max(sizeof("Edit distance"), sizeof("Value")) + 2;
+            constexpr std::size_t min_col_w = 8;
+            fmt::print("┌{0:─^{1}}", "", first_col_w);
+            for (std::size_t i = 0; i < possible_values.options.size(); ++i) {
+                auto &option = possible_values.options[i];
+                fmt::print("┬{0:─^{1}}", "", (std::max)(option.size() + 2, min_col_w));
+            }
+            fmt::print("┐\n");
+            fmt::print("│{0: ^{1}}", "Value", first_col_w);
+            for (std::size_t i = 0; i < possible_values.options.size(); ++i) {
+                auto &option = possible_values.options[i];
+                fmt::print("│{0: ^{1}}", option, (std::max)(option.size() + 2, min_col_w));
+            }
+            fmt::print("│\n");
+
             // Launch evaluation tasks
+            std::vector<futures::cfuture<std::size_t>> evaluation_tasks;
             for (std::size_t i = 0; i < possible_values.options.size(); ++i) {
                 const auto &possible_value = *(possible_values.options.begin() + i);
                 evaluation_tasks.emplace_back(futures::async(ex, [=, key = key]() mutable {
@@ -897,18 +914,21 @@ void clang_format_local_search(const cli_config &config) {
             }
 
             // Get and analyse results for parameter
+            bool skipped_any = false;
+            fmt::print("│{0: ^{1}}", "Edit distance", first_col_w);
             for (std::size_t i = 0; i < possible_values.options.size(); ++i) {
                 const auto &possible_value = possible_values.options[i];
 
                 // Message
-                fmt::print("Evaluating {}: ", key);
-                fmt::print(fmt::fg(fmt::terminal_color::blue), "{}", possible_value);
+                fmt::print("│");
                 std::cout << std::flush;
 
                 // Print some info
-                if (std::size_t dist = evaluation_tasks[i].get(); dist == std::size_t(-1)) {
-                    fmt::print(fmt::fg(fmt::terminal_color::yellow),
-                               " (skipping option unavailable in clang-format {})\n", config.clang_format_version);
+                std::size_t dist = evaluation_tasks[i].get();
+                std::size_t col_w = (std::max)(possible_value.size() + 2, min_col_w);
+                if (dist == std::size_t(-1)) {
+                    fmt::print(fmt::fg(fmt::terminal_color::yellow), "{0: ^{1}}", "skip", col_w);
+                    skipped_any = true;
                 } else {
                     const bool improved = dist < closest_edit_distance;
                     const bool closest_is_concrete_value = closest_edit_distance != std::size_t(-1);
@@ -916,19 +936,34 @@ void clang_format_local_search(const cli_config &config) {
                         value_influenced_output = dist != closest_edit_distance && closest_is_concrete_value;
                     }
                     if (improved && closest_is_concrete_value) {
-                        fmt::print(fmt::fg(fmt::terminal_color::green), " (improved edit distance to {})\n", dist);
-                    }
-                    if (improved && closest_is_concrete_value) {
-                        fmt::print(fmt::fg(fmt::terminal_color::blue), " (initial edit distance is {})\n", dist);
+                        fmt::print(fmt::fg(fmt::terminal_color::green), "{0: ^{1}}", dist, col_w);
+                    } else if (improved || dist == closest_edit_distance) {
+                        fmt::print(fmt::fg(fmt::terminal_color::blue), "{0: ^{1}}", dist, col_w);
                     } else {
-                        fmt::print(" (edit distance {})\n", dist);
+                        fmt::print(fmt::fg(fmt::terminal_color::bright_red), "{0: ^{1}}", dist, col_w);
                     }
                     if (improved) {
                         closest_edit_distance = dist;
                         improvement_value = possible_value;
                     }
                 }
+                std::cout << std::flush;
                 ++total_neighbors_evaluated;
+            }
+            fmt::print("│\n");
+
+            // table footer
+            fmt::print("└{0:─^{1}}", "", first_col_w);
+            for (std::size_t i = 0; i < possible_values.options.size(); ++i) {
+                auto &option = possible_values.options[i];
+                fmt::print("┴{0:─^{1}}", "", (std::max)(option.size() + 2, min_col_w));
+            }
+            fmt::print("┘\n");
+
+            if (skipped_any) {
+                fmt::print(fmt::fg(fmt::terminal_color::yellow),
+                           "Skipped option and value pairs not available in clang-format {}\n",
+                           config.clang_format_version);
             }
 
             // Update the main file
