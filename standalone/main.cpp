@@ -658,6 +658,9 @@ inline void print(const std::vector<clang_format_entry> &current_cf) {
         std::size_t key_width = 0;
         auto subsection_begin = key.find_first_of('.');
         if (bool section_only = subsection_begin == std::string::npos; section_only) {
+            if (failed) {
+                fmt::print("# ");
+            }
             fmt::print(fmt::fg(fmt::terminal_color::green), "{}", key);
             key_width = key.size();
         } else {
@@ -666,6 +669,9 @@ inline void print(const std::vector<clang_format_entry> &current_cf) {
             if (prev_section != section) {
                 fmt::print(fmt::fg(fmt::terminal_color::green), "{}:\n", section);
                 prev_section = section;
+            }
+            if (failed) {
+                fmt::print("# ");
             }
             fmt::print(fmt::fg(fmt::terminal_color::green), "  {}", subsection);
             key_width = subsection.size() + 2;
@@ -680,11 +686,11 @@ inline void print(const std::vector<clang_format_entry> &current_cf) {
         fmt::print(fmt::fg(fmt::terminal_color::blue), "{}", value_view);
         std::size_t value_width = value_view.size();
         std::size_t entry_width = key_width + value_width + 2;
-        std::size_t comment_padding = entry_width > 50 ? 0 : 50 - entry_width;
+        std::size_t comment_padding = entry_width > 50 ? 0 : 50 - entry_width - (failed ? 2 : 0);
         if (!comment.empty()) {
             fmt::print("{1: ^{2}} # {0}", comment, "", comment_padding);
         } else if (failed) {
-            fmt::print("{0: ^{1}} # parameter failed", "", comment_padding);
+            fmt::print("{0: ^{1}} # parameter not available", "", comment_padding);
         } else if (!affected_output) {
             fmt::print("{0: ^{1}} # did not affect the output", "", comment_padding);
         } else if (score != 0) {
@@ -702,6 +708,9 @@ inline void save(const std::vector<clang_format_entry> &current_cf, const fs::pa
     for (const auto &[key, value, affected_output, score, failed, comment] : current_cf) {
         auto subsection_begin = key.find_first_of('.');
         if (bool section_only = subsection_begin == std::string::npos; section_only) {
+            if (failed) {
+                fout << fmt::format("# ");
+            }
             fout << fmt::format("{}", key);
             key_width = key.size();
         } else {
@@ -710,6 +719,9 @@ inline void save(const std::vector<clang_format_entry> &current_cf, const fs::pa
             if (prev_section != section) {
                 fout << fmt::format("{}:\n", section);
                 prev_section = section;
+            }
+            if (failed) {
+                fout << fmt::format("# ");
             }
             fout << fmt::format("  {}", subsection);
             key_width = subsection.size() + 2;
@@ -722,11 +734,11 @@ inline void save(const std::vector<clang_format_entry> &current_cf, const fs::pa
         fout << fmt::format(": {}", value_view);
         std::size_t value_width = value_view.size();
         std::size_t entry_width = key_width + value_width + 2;
-        std::size_t comment_padding = entry_width > 50 ? 0 : 50 - entry_width;
+        std::size_t comment_padding = entry_width > 50 ? 0 : 50 - entry_width - (failed ? 2 : 0);
         if (!comment.empty()) {
             fout << fmt::format("{1: ^{2}} # {0}", comment, "", comment_padding);
         } else if (failed) {
-            fout << fmt::format("{0: ^{1}} # parameter failed", "", comment_padding);
+            fout << fmt::format("{0: ^{1}} # parameter not available", "", comment_padding);
         } else if (!affected_output) {
             fout << fmt::format("{0: ^{1}} # did not affect the output", "", comment_padding);
         } else if (score != 0) {
@@ -756,12 +768,11 @@ inline bool format_temp_directory(const cli_config &config, const fs::path &task
         fs::path p = it->path();
         if (should_format(config, p)) {
             process::ipstream is;
-            process::ipstream err_is;
             process::child c(config.clang_format.c_str(), "-i", fs::absolute(p).c_str(), process::std_out > is,
                              process::std_err > process::null);
             std::string line;
             bool first_error_line = true;
-            while (c.running() && (std::getline(is, line) || std::getline(err_is, line)) && !line.empty()) {
+            while (c.running() && std::getline(is, line) && !line.empty()) {
                 if (first_error_line) {
                     fmt::print(fmt::fg(fmt::terminal_color::red), "clang-format error!\n");
                     first_error_line = false;
