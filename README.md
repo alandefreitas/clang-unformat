@@ -12,6 +12,7 @@ Build:
 git clone https://www.github.com/alandefreitas/clang-unformat
 cd clang-unformat
 mkdir build
+cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-O3 ..
 cmake --build . --target clang-unformat
 ```
