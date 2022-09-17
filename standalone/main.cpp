@@ -750,8 +750,7 @@ inline void save(const std::vector<clang_format_entry> &current_cf, const fs::pa
 
 inline bool should_format(const cli_config &config, const fs::path &p) {
     if (fs::is_regular_file(p) && p.has_extension()) {
-        auto file_ext = p.extension();
-        auto file_ext_str = p.extension();
+        auto file_ext_str = p.extension().string();
         std::string_view file_ext_view = file_ext_str.c_str();
         auto it = std::find_if(config.extensions.begin(), config.extensions.end(), [file_ext_view](auto ext) {
             return file_ext_view == ext || (file_ext_view.front() == '.' && file_ext_view.substr(1) == ext);
