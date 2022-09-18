@@ -1,15 +1,27 @@
+#######################################################
+### Clang-Unformat                                  ###
+#######################################################
 cmake_minimum_required(VERSION 3.10)
 project(clang_unformat)
 
-# Dependencies
+#######################################################
+### Dependencies                                    ###
+#######################################################
+# Threads
 find_package(Threads)
+
+# Boost
 find_package(Boost 1.78.0 COMPONENTS process program_options filesystem)
 include(FetchContent)
+
+# fmt
 find_package(fmt QUIET)
 if (NOT fmt_FOUND)
     FetchContent_Declare(fmt URL https://github.com/fmtlib/fmt/releases/download/8.1.1/fmt-8.1.1.zip)
     FetchContent_MakeAvailable(fmt)
 endif()
+
+# futures
 FetchContent_Declare(futures URL https://github.com/alandefreitas/futures/archive/refs/tags/v0.1.1.zip)
 if(NOT futures_POPULATED)
     FetchContent_Populate(futures)
@@ -17,7 +29,9 @@ if(NOT futures_POPULATED)
     target_include_directories(futures_headers INTERFACE ${futures_SOURCE_DIR}/source)
 endif()
 
-# Executable
+#######################################################
+### Executable                                      ###
+#######################################################
 add_executable(clang-unformat standalone/main.cpp)
 target_compile_features(clang-unformat PUBLIC cxx_std_17)
 target_link_libraries(clang-unformat
