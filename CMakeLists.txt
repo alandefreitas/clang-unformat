@@ -32,8 +32,18 @@ endif()
 #######################################################
 ### Executable                                      ###
 #######################################################
-add_executable(clang-unformat standalone/main.cpp)
-target_compile_features(clang-unformat PUBLIC cxx_std_17)
+add_executable(clang-unformat
+        standalone/application.cpp
+        standalone/application.hpp
+        standalone/clang_format.cpp
+        standalone/clang_format.hpp
+        standalone/cli_config.cpp
+        standalone/cli_config.hpp
+        standalone/levenshtein.cpp
+        standalone/levenshtein.hpp
+        standalone/main.cpp)
+target_include_directories(clang-unformat PRIVATE standalone)
+target_compile_features(clang-unformat PRIVATE cxx_std_17)
 target_link_libraries(clang-unformat
     Boost::program_options
     Boost::filesystem
