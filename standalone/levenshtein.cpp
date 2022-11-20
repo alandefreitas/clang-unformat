@@ -6,47 +6,18 @@
 //
 
 #include "levenshtein.hpp"
+#include <edlib.h>
 #include <fstream>
-#include <vector>
 
 std::size_t
 levenshtein_distance(std::string_view s1, std::string_view s2) {
-    // trivial cases
-    const std::size_t m(s1.size());
-    const std::size_t n(s2.size());
-    if (m == 0) {
-        return n;
-    }
-    if (n == 0) {
-        return m;
-    }
-
-    // init costs
-    std::vector<std::size_t> costs(n + 1);
-    for (std::size_t k = 0; k <= n; k++) {
-        costs[k] = k;
-    }
-
-    // iterate s1
-    std::size_t i{ 0 };
-    for (char const &c1: s1) {
-        costs[0] = i + 1;
-        std::size_t corner{ i };
-        std::size_t j{ 0 };
-        for (char const &c2: s2) {
-            std::size_t upper{ costs[j + 1] };
-            if (c1 == c2) {
-                costs[j + 1] = corner;
-            } else {
-                std::size_t t(upper < corner ? upper : corner);
-                costs[j + 1] = (costs[j] < t ? costs[j] : t) + 1;
-            }
-            corner = upper;
-            j++;
-        }
-        i++;
-    }
-    return costs[n];
+    return edlibAlign(
+               s1.data(),
+               s1.size(),
+               s2.data(),
+               s2.size(),
+               edlibDefaultAlignConfig())
+        .editDistance;
 }
 
 std::size_t
