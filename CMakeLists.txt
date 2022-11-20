@@ -29,6 +29,16 @@ if(NOT futures_POPULATED)
     target_include_directories(futures_headers INTERFACE ${futures_SOURCE_DIR}/source)
 endif()
 
+# edlib
+find_package(edlib CONFIG QUIET)
+if (NOT edlib_FOUND)
+    FetchContent_Declare(edlib URL https://github.com/Martinsos/edlib/archive/refs/tags/v1.2.7.zip)
+    if (NOT edlib_POPULATED)
+        FetchContent_Populate(edlib)
+        add_subdirectory(${edlib_SOURCE_DIR} EXCLUDE_FROM_ALL)
+    endif()
+endif()
+
 #######################################################
 ### Executable                                      ###
 #######################################################
@@ -50,4 +60,5 @@ target_link_libraries(clang-unformat
     Threads::Threads
     fmt::fmt
     futures_headers
+    edlib::edlib
 )
