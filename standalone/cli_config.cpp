@@ -15,6 +15,14 @@
 #include <algorithm>
 #include <charconv>
 
+#if FMT_VERSION >= 90000
+template <>
+struct fmt::formatter<boost::program_options::options_description>
+    : ostream_formatter {};
+template <>
+struct fmt::formatter<std::filesystem::path> : ostream_formatter {};
+#endif
+
 namespace fs = std::filesystem;
 namespace process = boost::process;
 
