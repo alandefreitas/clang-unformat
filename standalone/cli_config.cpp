@@ -61,6 +61,7 @@ parse_cli(int argc, char **argv) {
     cli_config c;
     c.help = vm.count("help");
     c.input = vm["input"].as<fs::path>();
+    c.output = vm["output"].as<fs::path>();
     c.temp = vm["temp"].as<fs::path>();
     c.clang_format = vm["clang-format"].as<fs::path>();
     if (vm.count("extensions")) {
