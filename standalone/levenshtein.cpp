@@ -6,18 +6,21 @@
 //
 
 #include "levenshtein.hpp"
+#include <cstddef>
 #include <edlib.h>
 #include <fstream>
 
 std::size_t
 levenshtein_distance(std::string_view s1, std::string_view s2) {
-    return edlibAlign(
+    auto r = edlibAlign(
                s1.data(),
                s1.size(),
                s2.data(),
                s2.size(),
-               edlibDefaultAlignConfig())
-        .editDistance;
+               edlibDefaultAlignConfig());
+    std::size_t d = r.editDistance;
+    edlibFreeAlignResult(r);
+    return d;
 }
 
 std::size_t
