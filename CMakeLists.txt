@@ -7,12 +7,26 @@ project(clang_unformat)
 #######################################################
 ### Dependencies                                    ###
 #######################################################
+include(FetchContent)
+
 # Threads
 find_package(Threads)
 
 # Boost
 find_package(Boost 1.78.0 COMPONENTS process program_options filesystem)
-include(FetchContent)
+if (NOT Boost_FOUND)
+    set(BOOST_VERSION 1.81.0)
+    message("Boost library not found or Version < 1.78.0 ; fetch and install Version ${BOOST_VERSION}")
+    set(BOOST_INCLUDE_LIBRARIES filesystem system program_options)
+    set(BOOST_ENABLE_CMAKE ON)
+
+    FetchContent_Declare(
+        Boost
+        URL https://github.com/boostorg/boost/releases/download/boost-${BOOST_VERSION}/boost-${BOOST_VERSION}.zip
+        GIT_TAG boost-${BOOST_VERSION}
+    )
+    FetchContent_MakeAvailable(Boost)
+endif()
 
 # fmt
 find_package(fmt QUIET)

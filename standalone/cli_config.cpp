@@ -38,7 +38,8 @@ program_description() {
     static po::options_description desc("clang-unformat");
     // clang-format off
     const fs::path empty_path;
-    desc.add_options()
+    if (desc.options().empty()) {
+        desc.add_options()
         ("help", "produce help message")
         ("input", po::value<fs::path>()->default_value(empty_path), "input directory with source files")
         ("output", po::value<fs::path>()->default_value(empty_path), "output path for the clang-format file")
@@ -47,6 +48,7 @@ program_description() {
         ("parallel", po::value<std::size_t>()->default_value(std::min(std::thread::hardware_concurrency(), static_cast<unsigned int>(1))), "number of threads")
         ("require-influence", po::value<bool>()->default_value(false), "only include parameters that influence the output")
         ("extensions", po::value<std::vector<std::string>>(), "file extensions to format");
+    }
     // clang-format on
     return desc;
 }
