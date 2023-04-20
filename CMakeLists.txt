@@ -7,12 +7,26 @@ project(clang_unformat)
 #######################################################
 ### Dependencies                                    ###
 #######################################################
+include(FetchContent)
+
 # Threads
 find_package(Threads)
 
 # Boost
-find_package(Boost 1.78.0 COMPONENTS process program_options filesystem)
-include(FetchContent)
+find_package(Boost 1.78.0 COMPONENTS process program_options asio)
+if (NOT Boost_FOUND)
+    set(BOOST_VERSION 1.81.0)
+    message("Boost library not found or Version < 1.78.0 ; fetch and install Version ${BOOST_VERSION}")
+    set(BOOST_INCLUDE_LIBRARIES process program_options asio)
+    set(BOOST_ENABLE_CMAKE ON)
+
+    FetchContent_Declare(
+        Boost
+        URL https://github.com/boostorg/boost/releases/download/boost-${BOOST_VERSION}/boost-${BOOST_VERSION}.zip
+        GIT_TAG boost-${BOOST_VERSION}
+    )
+    FetchContent_MakeAvailable(Boost)
+endif()
 
 # fmt
 find_package(fmt QUIET)
@@ -56,7 +70,8 @@ target_include_directories(clang-unformat PRIVATE standalone)
 target_compile_features(clang-unformat PRIVATE cxx_std_17)
 target_link_libraries(clang-unformat
     Boost::program_options
-    Boost::filesystem
+    Boost::process
+    Boost::asio
     Threads::Threads
     fmt::fmt
     futures_headers
