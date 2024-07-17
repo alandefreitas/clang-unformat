@@ -155,8 +155,9 @@ validate_output_dir(cli_config &config) {
                 fmt::fg(fmt::terminal_color::yellow),
                 "output set to {}\n",
                 config.output);
-            return false;
+            return true;
         }
+        return false;
     }
     if (config.output.filename() != ".clang-format") {
         fmt::print(
